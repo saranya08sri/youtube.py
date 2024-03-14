@@ -3,7 +3,7 @@ import pymongo
 import psycopg2
 import pandas as pd
 import streamlit as st
-
+import plotly.express as px
 
 #API key connection
 
@@ -183,17 +183,13 @@ def channel_details(channel_id):
 
 # Create and insert a data into table for channel
 
-def Channel_table():
+def Channel_table(channel_name_1):
     db_connection=psycopg2.connect(host="localhost",
                             user="postgres",
                             password="admin@081828",
                             database="ytsqldatabase",
                             port="5432")
     cursor=db_connection.cursor()
-
-    drop_query='''drop table if exists channels'''
-    cursor.execute(drop_query)
-    db_connection.commit()
 
     
     create_query='''create table if not exists channels(Channel_Name varchar(100),
@@ -209,15 +205,17 @@ def Channel_table():
     
     
         
-    ch_list=[]
+    single_channel_details=[]
     mydb=myclient["Youtube_data"]
     mycoll=mydb["channel_detalis"]
-    for ch_data in mycoll.find({},{"_id":0,"channel_information":1}):
-        ch_list.append(ch_data["channel_information"])
-    df=pd.DataFrame(ch_list)
+    for ch_data in mycoll.find({"channel_information.Channel_Name":channel_name_1},{"_id":0}):
+        single_channel_details.append(ch_data["channel_information"])
+
+    df_single_channel_details=pd.DataFrame(single_channel_details)
+
         
         
-    for index,row in df.iterrows():
+    for index,row in df_single_channel_details.iterrows():
         insert_query='''insert into channels(Channel_Name,
                                             Channel_Id,
                                             Subscribers,
@@ -235,12 +233,19 @@ def Channel_table():
                 row['Channel_Description'],
                 row['Playlist_Id'])
         
-        cursor.execute(insert_query,values)
-        db_connection.commit()
+        try:
+            
+            cursor.execute(insert_query,values)
+            db_connection.commit()
+        except:
+            result= f"The Given Channel Name {channel_name_1} is already exists"
+            
+            return result
+            
 
 # create and insert a data  into table for Playlists
 
-def playlist_table():
+def playlist_table(channel_name_1):
     db_connection=psycopg2.connect(host="localhost",
                                 user="postgres",
                                 password="admin@081828",
@@ -248,9 +253,7 @@ def playlist_table():
                                 port="5432")
     cursor=db_connection.cursor()
 
-    drop_query='''drop table if exists playlists'''
-    cursor.execute(drop_query)
-    db_connection.commit()
+
 
     create_query='''create table if not exists playlists(Playlist_Id varchar(100) primary key,
                                                         Title varchar(100),
@@ -261,15 +264,15 @@ def playlist_table():
     cursor.execute(create_query)
     db_connection.commit()
 
-    pl_list=[]
+    single_playlist_details=[]
     mydb=myclient["Youtube_data"]
     mycoll=mydb["channel_detalis"]
-    for pl_data in mycoll.find({},{"_id":0,"playlist_information":1}):
-         for playlist_info in pl_data.get('playlist_information', []):
-            pl_list.append(playlist_info)
-    df1=pd.DataFrame(pl_list)
+    for ch_data in mycoll.find({"channel_information.Channel_Name": channel_name_1},{"_id":0}):
+        single_playlist_details.append(ch_data["playlist_information"])
 
-    for index,row in df1.iterrows():
+    df_single_playlist_details=pd.DataFrame(single_playlist_details[0])
+
+    for index,row in df_single_playlist_details.iterrows():
         insert_query='''insert into playlists(Playlist_Id,
                                             Title,
                                             Channel_Id,
@@ -290,7 +293,7 @@ def playlist_table():
         
 # create and insert a data into table for video
 
-def video_table():
+def video_table(channel_name_1):
         db_connection=psycopg2.connect(host="localhost",
                                         user="postgres",
                                         password="admin@081828",
@@ -298,9 +301,6 @@ def video_table():
                                         port="5432")
         cursor=db_connection.cursor()
 
-        drop_query='''drop table if exists videos'''
-        cursor.execute(drop_query)
-        db_connection.commit()
 
         create_query='''create table if not exists videos(channel_Name varchar(100),
                                                         channel_Id varchar(100),
@@ -319,18 +319,19 @@ def video_table():
         cursor.execute(create_query)
         db_connection.commit()
 
-        vi_list=[]
+        single_videos_details=[]
         mydb=myclient["Youtube_data"]
         mycoll=mydb["channel_detalis"]
-        for vi_data in mycoll.find({},{"_id":0,"video_information":1}):
-                for i in range(len(vi_data["video_information"])):
-                        vi_list.append(vi_data["video_information"][i])
-        df2=pd.DataFrame(vi_list)
+        for ch_data in mycoll.find({"channel_information.Channel_Name": channel_name_1},{"_id":0}):
+                single_videos_details.append(ch_data["video_information"])
+
+        df_single_videos_details=pd.DataFrame(single_videos_details[0])
+
                 
     
 
 
-        for index,row in df2.iterrows():
+        for index,row in df_single_videos_details.iterrows():
                 insert_query='''insert into videos(channel_Name,
                                                         channel_Id,
                                                         Video_Id,
@@ -365,7 +366,7 @@ def video_table():
 
 # create and insert a data into table for comment
 
-def comment_table():
+def comment_table(channel_name_1):
     db_connection=psycopg2.connect(host="localhost",
                                     user="postgres",
                                     password="admin@081828",
@@ -386,15 +387,15 @@ def comment_table():
     cursor.execute(create_query)
     db_connection.commit()
 
-    comm_list=[]
+    single_comments_details=[]
     mydb=myclient["Youtube_data"]
     mycoll=mydb["channel_detalis"]
-    for comm_data in mycoll.find({},{"_id":0,"comment_information":1}):
-            for comment_info in comm_data.get('comment_information', []):
-                    comm_list.append(comment_info)
-    df3=pd.DataFrame(comm_list)
+    for ch_data in mycoll.find({"channel_information.Channel_Name": channel_name_1},{"_id":0}):
+            single_comments_details.append(ch_data["comment_information"])
 
-    for index,row in df3.iterrows():
+    df_single_comments_details=pd.DataFrame(single_comments_details[0])
+
+    for index,row in df_single_comments_details.iterrows():
             insert_query='''insert into comments(Comment_Id,
                                             Video_id,
                                             Comment_text,
@@ -413,13 +414,16 @@ def comment_table():
             db_connection.commit()
 
 #  creating a function for all table
-def tables():
-    Channel_table()
-    playlist_table()
-    video_table()
-    comment_table()
+def tables(single_channel):
+    result= Channel_table(single_channel)
+    if result:
+        return result
+    else:
+        playlist_table(single_channel)
+        video_table(single_channel)
+        comment_table(single_channel)
     
-    return "Tables created successfully"
+        return "Tables created successfully"
 
 
 def show_channel_table():
@@ -482,8 +486,18 @@ if st.button("Extract to momgodb"):
         insert=channel_details(Channel_id)
         st.success(insert)
         
+all_channels=[]
+mydb=myclient["Youtube_data"]
+mycoll=mydb["channel_detalis"]
+for ch_data in mycoll.find({},{"_id":0,"channel_information":1}):
+    all_channels.append(ch_data["channel_information"]["Channel_Name"])
+   
+        
+unique_channel=st.selectbox("Select the channel",all_channels)
+        
 if st.button("Migrate to sql"):
-    Tables=tables()
+    
+    Tables=tables(unique_channel)
     st.success(Tables)
 
 show_table=st.radio("SELECT AND VIEW THE TABLE",("CHANNELS","PLAYLISTS","VIDEOS","COMMENTS"))
@@ -524,6 +538,7 @@ if Questions=="1. All the videos and the channels":
     df=pd.DataFrame(q1,columns=["videos title","channel name"])
     st.write(df)
     
+    
 elif Questions=="2. Channels with most number of videos":
     query2='''select channel_name as channelname,total_videos as no_videos from channels 
                 order by total_videos desc'''
@@ -532,6 +547,10 @@ elif Questions=="2. Channels with most number of videos":
     q2=cursor.fetchall()
     df2=pd.DataFrame(q2,columns=["channel name","No of videos"])
     st.write(df2)
+    fig = px.pie(df2, values='No of videos', names='channel name', title='Channels with Most Number of Videos')
+
+    # Display the pie chart in Streamlit
+    st.plotly_chart(fig)
     
 elif Questions=="3. Top 10 most viewed Videos":
     query3='''select view_count as views, channel_name as channelname,title as videotitle from videos
@@ -541,6 +560,9 @@ elif Questions=="3. Top 10 most viewed Videos":
     df3=pd.DataFrame(q3,columns=["views","channel name","videotitle"])
     st.write(df3)
     
+
+
+
 elif Questions== "4. Comments for each video and their coresponding video names":
     query4='''select comment_count as no_comments,title as videotitle from videos where comment_count is not null'''
     cursor.execute(query4)
@@ -573,6 +595,12 @@ elif Questions== "7. Number of views in each channel":
     q7=cursor.fetchall()
     df7=pd.DataFrame(q7,columns=["channel name","totalviews"])
     st.write(df7)
+    fig = px.histogram(df7, x='totalviews', title='Distribution of Total Views in Each Channel',
+                       labels={'totalviews': 'views', 'channel name': 'channel_name'})
+
+
+    # Display the histogram in Streamlit
+    st.plotly_chart(fig)
     
 elif Questions== "8. videos published in the year of 2022":
     query8='''select  title as video_title,published_date as videorelese,channel_name as channelname from videos 
@@ -589,6 +617,14 @@ elif Questions=="9. Average videos of Duration of all videos":
     db_connection.commit()
     q9=cursor.fetchall()
     df9=pd.DataFrame(q9,columns=["channelname","averageduration"])
+    
+    fig = px.line(df9, x='channelname', y='averageduration', title='Average Duration of Videos by Channel')
+
+    # Customize the layout
+    fig.update_layout(xaxis_title='Channel Name', yaxis_title='Average Duration')
+
+    # Display the line chart in Streamlit
+    st.plotly_chart(fig)
     
 
     Q9=[]
@@ -608,6 +644,11 @@ elif Questions=="10. Videos have Highest number of comments":
     q10=cursor.fetchall()
     df10=pd.DataFrame(q10,columns=["videotitle","channel name","comments"])
     st.write(df10)
+    fig = px.bar(df10, x='comments', y='videotitle',
+                 color='channel name', title='Videos with Highest Number of Comments')
+
+    # Display the bar chart in Streamlit
+    st.plotly_chart(fig)
 
 
 
